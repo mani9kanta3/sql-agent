@@ -1,0 +1,45 @@
+# Secrets. The API keys and both database passwords live here.
+.env
+backend/.env
+frontend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+.pytest_cache/
+
+# The embedding model download, about 130 MB.
+models/
+
+# Node
+node_modules/
+dist/
+
+# Evaluation output. Written by eval/run_eval.py.
+#
+# latest.json and comparison.json are committed on purpose, because the
+# numbers in the README come from them and anyone reading it should be
+# able to check where they came from. Everything else is scratch.
+backend/data/eval/*
+!backend/data/eval/latest.json
+!backend/data/eval/comparison.json
+!backend/data/eval/baseline.json
+
+# The schema vectors are rebuilt in one command, so there is no reason
+# to commit a generated file.
+backend/data/schema_index.json
+
+# Timestamped copies of every evaluation run. Insurance against
+# overwriting results, which I have done. Not for anyone else to read.
+backend/data/eval/runs/
+
+# The schema snapshot is rebuilt with the index.
+backend/data/schema_snapshot.json
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,45 @@
+# The agent
+langgraph==0.2.62
+langgraph-checkpoint==2.0.9
+
+# The tools, exposed over the Model Context Protocol
+mcp==1.2.0
+
+# Database. psycopg2-binary rather than psycopg2 so there is nothing to
+# compile on Windows.
+psycopg2-binary==2.9.10
+
+# Static SQL validation. This is the parser that decides what may run.
+sqlglot==26.3.8
+
+# The API
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.5
+
+# Model providers. Groq is the default, google-genai is there so
+# LLM_PROVIDER can be switched without touching the code.
+groq==0.15.0
+google-genai==1.0.0
+
+# Schema retrieval. Embeds the fifteen table descriptions so the right
+# three to five go into the prompt.
+sentence-transformers==3.3.1
+numpy==2.2.1
+
+# Tracing. Optional, does nothing without keys in the .env.
+#
+# The major version matters here, it is not just caution. The SDK has
+# been rewritten twice and the instrumentation API is different in each:
+# v2 is langfuse.trace(), v3 is start_as_current_span(), v4 is
+# start_as_current_observation() on top of OpenTelemetry. app/tracing.py
+# is written against v4. I found this the hard way, having written v4
+# style code against a v2 pin, where it failed inside the try/except that
+# is there to stop tracing breaking a request. It did its job and hid the
+# bug completely.
+langfuse==4.15.1
+
+python-dotenv==1.0.1
+
+# Tests
+pytest==8.3.4
