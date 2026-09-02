@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1260" height="935" viewBox="0 0 1260 935" font-family="Virgil, Excalifont, 'Segoe Print', 'Comic Sans MS', 'Trebuchet MS', sans-serif">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs>
+  <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M 0 1 L 9 5 L 0 9" fill="none" stroke="context-stroke" stroke-width="1.6"/>
+  </marker>
+</defs>
+<rect x="60" y="140" width="210" height="110" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<rect x="330" y="140" width="210" height="110" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<rect x="600" y="120" width="330" height="210" rx="10" fill="#d0bfff" stroke="#6741d9" stroke-width="2"/>
+<rect x="990" y="120" width="200" height="85" rx="10" fill="#ffec99" stroke="#f08c00" stroke-width="2"/>
+<rect x="990" y="235" width="200" height="95" rx="10" fill="#ffec99" stroke="#f08c00" stroke-width="2"/>
+<rect x="600" y="395" width="330" height="125" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<rect x="250" y="395" width="290" height="125" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<rect x="990" y="395" width="200" height="125" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<rect x="600" y="585" width="330" height="95" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<rect x="990" y="585" width="200" height="95" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<rect x="470" y="745" width="720" height="160" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<rect x="495" y="800" width="320" height="85" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<rect x="840" y="800" width="325" height="85" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<polyline points="270,195 330,195" fill="none" stroke="#1e1e1e" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<polyline points="540,195 600,195" fill="none" stroke="#1e1e1e" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<polyline points="930,172 990,162" fill="none" stroke="#f08c00" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<polyline points="930,268 990,278" fill="none" stroke="#f08c00" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)" stroke-dasharray="7 6"/>
+<polyline points="765,330 765,395" fill="none" stroke="#6741d9" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<polyline points="540,457 600,457" fill="none" stroke="#2f9e44" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<polyline points="930,457 990,457" fill="none" stroke="#495057" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)" stroke-dasharray="7 6"/>
+<polyline points="765,520 765,585" fill="none" stroke="#2f9e44" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<polyline points="765,680 765,745" fill="none" stroke="#2f9e44" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<polyline points="350,250 350,285 180,285 180,552 1090,552 1090,585" fill="none" stroke="#e03131" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)" stroke-dasharray="7 6"/>
+<polyline points="1090,680 1090,745" fill="none" stroke="#e03131" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<polyline points="600,300 570,300 570,240 600,240" fill="none" stroke="#6741d9" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah)"/>
+<text x="60" y="68" font-size="28" fill="#1e1e1e" font-weight="bold">SQL Analyst Agent</text>
+<text x="60" y="92" font-size="14" fill="#495057" font-weight="normal">Question in, answer out, and the SQL it used shown with it</text>
+<text x="74" y="170" font-size="17" fill="#1971c2" font-weight="bold">React page</text>
+<text x="74" y="197.75" font-size="13" fill="#343a40" font-weight="normal">question box</text>
+<text x="74" y="215.29999999999998" font-size="13" fill="#343a40" font-weight="normal">answer + the SQL</text>
+<text x="74" y="232.85" font-size="13" fill="#343a40" font-weight="normal">failed attempts</text>
+<text x="344" y="170" font-size="17" fill="#1971c2" font-weight="bold">FastAPI</text>
+<text x="344" y="197.75" font-size="13" fill="#343a40" font-weight="normal">/api/ask</text>
+<text x="344" y="215.29999999999998" font-size="13" fill="#343a40" font-weight="normal">/api/schema</text>
+<text x="344" y="232.85" font-size="13" fill="#343a40" font-weight="normal">/api/eval/latest</text>
+<text x="614" y="150" font-size="17" fill="#6741d9" font-weight="bold">LangGraph agent</text>
+<text x="614" y="177.75" font-size="13" fill="#343a40" font-weight="normal">select_schema   retrieve 3-5 tables</text>
+<text x="614" y="195.29999999999998" font-size="13" fill="#343a40" font-weight="normal">generate_sql</text>
+<text x="614" y="212.85" font-size="13" fill="#343a40" font-weight="normal">validate_static  sqlglot, no db yet</text>
+<text x="614" y="230.39999999999998" font-size="13" fill="#343a40" font-weight="normal">execute            read only, 5s</text>
+<text x="614" y="247.95" font-size="13" fill="#343a40" font-weight="normal">inspect_result   empty? diagnose</text>
+<text x="614" y="265.5" font-size="13" fill="#343a40" font-weight="normal"></text>
+<text x="614" y="283.05" font-size="13" fill="#343a40" font-weight="normal">3 attempts, then give up honestly</text>
+<text x="1004" y="150" font-size="17" fill="#f08c00" font-weight="bold">Groq</text>
+<text x="1004" y="177.75" font-size="13" fill="#343a40" font-weight="normal">gpt-oss-120b</text>
+<text x="1004" y="195.29999999999998" font-size="13" fill="#343a40" font-weight="normal">temperature 0</text>
+<text x="1004" y="265" font-size="17" fill="#f08c00" font-weight="bold">Langfuse</text>
+<text x="1004" y="292.75" font-size="13" fill="#343a40" font-weight="normal">one trace per question</text>
+<text x="1004" y="310.3" font-size="13" fill="#343a40" font-weight="normal">tokens, cost, errors</text>
+<text x="614" y="425" font-size="17" fill="#2f9e44" font-weight="bold">app/tools.py   the one gate</text>
+<text x="614" y="452.75" font-size="13" fill="#343a40" font-weight="normal">list_tables      describe_table</text>
+<text x="614" y="470.3" font-size="13" fill="#343a40" font-weight="normal">sample_rows   run_query</text>
+<text x="614" y="487.85" font-size="13" fill="#343a40" font-weight="normal"></text>
+<text x="614" y="505.4" font-size="13" fill="#343a40" font-weight="normal">sqlglot: single SELECT only, LIMIT forced</text>
+<text x="264" y="425" font-size="17" fill="#2f9e44" font-weight="bold">mcp_server/server.py</text>
+<text x="264" y="452.75" font-size="13" fill="#343a40" font-weight="normal">the same four tools over</text>
+<text x="264" y="470.3" font-size="13" fill="#343a40" font-weight="normal">stdio, for any MCP client</text>
+<text x="264" y="487.85" font-size="13" fill="#343a40" font-weight="normal"></text>
+<text x="264" y="505.4" font-size="13" fill="#343a40" font-weight="normal">same gate, so the rules hold</text>
+<text x="1004" y="425" font-size="17" fill="#495057" font-weight="bold">schema_index.json</text>
+<text x="1004" y="451.4" font-size="12" fill="#343a40" font-weight="normal">15 table descriptions</text>
+<text x="1004" y="467.6" font-size="12" fill="#343a40" font-weight="normal">embedded with bge-small</text>
+<text x="1004" y="483.8" font-size="12" fill="#343a40" font-weight="normal"></text>
+<text x="1004" y="500.0" font-size="12" fill="#343a40" font-weight="normal">drift check compares</text>
+<text x="1004" y="516.2" font-size="12" fill="#343a40" font-weight="normal">the live schema to it</text>
+<text x="614" y="615" font-size="17" fill="#2f9e44" font-weight="bold">app/db.py</text>
+<text x="614" y="642.75" font-size="13" fill="#343a40" font-weight="normal">read only session, 5s statement timeout</text>
+<text x="614" y="660.3000000000001" font-size="13" fill="#343a40" font-weight="normal">always ROLLBACK, never COMMIT</text>
+<text x="1004" y="615" font-size="17" fill="#e03131" font-weight="bold">app/query_log.py</text>
+<text x="1004" y="642.75" font-size="13" fill="#343a40" font-weight="normal">one row per question</text>
+<text x="1004" y="660.3000000000001" font-size="13" fill="#343a40" font-weight="normal">the only writer in app/</text>
+<text x="484" y="775" font-size="17" fill="#1e1e1e" font-weight="bold">PostgreSQL</text>
+<text x="509" y="830" font-size="17" fill="#2f9e44" font-weight="bold">sql_agent_ro</text>
+<text x="509" y="856.4000000000001" font-size="12" fill="#343a40" font-weight="normal">SELECT only.</text>
+<text x="509" y="872.6" font-size="12" fill="#343a40" font-weight="normal">Cannot write. This is the control.</text>
+<text x="854" y="830" font-size="17" fill="#e03131" font-weight="bold">sql_agent_log</text>
+<text x="854" y="856.4000000000001" font-size="12" fill="#343a40" font-weight="normal">INSERT on agent_query_log only.</text>
+<text x="854" y="872.6" font-size="12" fill="#343a40" font-weight="normal">No SELECT, no UPDATE, no DELETE.</text>
+<text x="455" y="312" font-size="12" fill="#6741d9" font-weight="normal">repair: the error type</text>
+<text x="455" y="328" font-size="12" fill="#6741d9" font-weight="normal">picks the strategy</text>
+<text x="272" y="180" font-size="12" fill="#495057" font-weight="normal">POST /api/ask</text>
+<text x="545" y="180" font-size="12" fill="#495057" font-weight="normal">question</text>
+<text x="935" y="152" font-size="12" fill="#495057" font-weight="normal">SQL + answer</text>
+<text x="938" y="262" font-size="12" fill="#495057" font-weight="normal">trace</text>
+<text x="770" y="360" font-size="12" fill="#495057" font-weight="normal">every query</text>
+<text x="200" y="570" font-size="12" fill="#495057" font-weight="normal">log the answer</text>
+</svg>

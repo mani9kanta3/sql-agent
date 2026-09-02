@@ -95,47 +95,28 @@ worth more than a flattering one.
 
 ## Architecture
 
-```
-   React page                FastAPI                    LangGraph agent
-   question box     ->    POST /api/ask     ->     select -> generate -> validate
-   answer + SQL     <-    answer, SQL,      <-     -> execute -> inspect -> answer
-   attempt count          attempts, trace           ^                  |
-                                                    +---- repair ------+
-                                                             |
-                                                     app/tools.py
-                                          list_tables  describe_table
-                                          sample_rows  run_query
-                                                             |
-                                              +--------------+--------------+
-                                              |                             |
-                                     mcp_server/server.py            app/db.py
-                                     the same four tools,        read-only session
-                                     for any MCP client          5s timeout, rollback
-                                                                          |
-                                                                   PostgreSQL
-                                                                sql_agent_ro role
-                                                                  SELECT only
-                                                                sql_agent_log role
-                                                                  INSERT on the
-                                                                  query log only
+![System architecture](architecture.svg)
 
-   Every step above emits a Langfuse observation, nested, so one question
-   is one readable trace: retrieval scores, each generation with its tokens
-   and cost, the guardrail verdict, and every failed query with its error.
-```
+<sub>Source: [`architecture.excalidraw`](architecture.excalidraw) — open it at
+[excalidraw.com](https://excalidraw.com) to edit.</sub>
 
-Three things worth pointing out in that diagram.
+Four things in that diagram are the whole design.
 
-The agent and an MCP client both reach the database through **the same four
-functions** in `app/tools.py`. There is no second route, so the safety rules hold
-regardless of what is calling.
+**Everything goes through one gate.** The agent and an MCP client both reach the
+database through the same four functions in `app/tools.py`, so the safety rules
+hold regardless of what is calling. There is no second route.
 
-`app/` contains no code that can write to the database. The admin credentials are
-only read by `scripts/`, and `app/db.py` connects as the read-only role and never
-commits.
+**Two credentials, each as narrow as its job.** `sql_agent_ro` holds `SELECT` and
+nothing else, which is what the safety argument actually rests on. `sql_agent_log`
+holds `INSERT` on one table and cannot read the shop's data at all. `app/db.py`,
+the only route the agent has, knows about the first one alone.
 
-The answer always carries the SQL. That is a trust feature, not a debug one. An
-answer with no query behind it has to be taken on faith.
+**The loop is driven by the error type, not by failure.** The violet edge back
+into `generate_sql` carries a structured error, and which error it is picks which
+repair runs. A syntax error regenerates; an unknown column widens retrieval first.
+
+**The answer always carries the SQL.** That is a trust feature, not a debug one.
+An answer with no query behind it has to be taken on faith.
 
 ---
 
