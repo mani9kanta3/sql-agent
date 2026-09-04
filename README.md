@@ -13,7 +13,13 @@
 ![sqlglot](https://img.shields.io/badge/sqlglot-static%20validation-A30000?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)
 ![Langfuse](https://img.shields.io/badge/Langfuse-v4%20tracing-E11D48?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-118%20passing-2EA44F?style=flat-square&logo=pytest&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-121%20passing-2EA44F?style=flat-square&logo=pytest&logoColor=white)
+
+**[Live demo](https://sql-agent-sigma-three.vercel.app)** &nbsp;·&nbsp; **[API health](https://sql-agent-api-b6tu.onrender.com/api/health)** &nbsp;·&nbsp; **[API docs](https://sql-agent-api-b6tu.onrender.com/docs)**
+
+<sub>The API sleeps after fifteen minutes idle on Render's free tier, so the first
+question can take about fifty seconds while it wakes. Every one after that is
+normal. Cheaper than paying to keep a portfolio project warm.</sub>
 
 </div>
 
@@ -45,9 +51,10 @@ and cannot do damage**, and that there are numbers proving all three.
 13. [API reference](#api-reference)
 14. [Frontend](#frontend)
 15. [Local setup](#local-setup)
-16. [Testing](#testing)
-17. [Design decisions](#design-decisions)
-18. [Known limitations](#known-limitations)
+16. [Deployment](#deployment)
+17. [Testing](#testing)
+18. [Design decisions](#design-decisions)
+19. [Known limitations](#known-limitations)
 
 ---
 
@@ -854,8 +861,9 @@ python -m eval.run_eval --both
 
 ## API reference
 
-Base URL `http://localhost:8000/api`. No authentication — the database is
-read-only and there is nothing to protect behind a login.
+Base URL `https://sql-agent-api-b6tu.onrender.com/api`, or `http://localhost:8000/api` when running it
+yourself. No authentication — the database is read-only and there is nothing to
+protect behind a login.
 
 ### `POST /api/ask`
 
@@ -1036,6 +1044,60 @@ python -m mcp_server.server
 ```
 
 Speaks stdio, so any MCP client can launch it.
+
+---
+
+## Deployment
+
+| Piece | Where | Why |
+|---|---|---|
+| API | Render, Docker, free tier | Free, and it builds the committed Dockerfile straight from the repo |
+| Database | **Neon**, not Render | Render's free Postgres expires. A portfolio link that dies three weeks after someone bookmarks it is worse than one that was never deployed |
+| Frontend | Vercel | Static build, free, and a push to `main` redeploys it |
+
+`render.yaml` is committed, so Render's Blueprint reads the settings rather than
+me remembering fourteen dashboard fields at two in the morning. Every secret in
+it is marked `sync: false` — a secret in a file in a public repository is not a
+secret.
+
+**The image is not the development environment.** `requirements-serve.txt` drops
+PyTorch, the tests and the MCP entry point, taking the install from about 1.2 GB
+to roughly 250 MB, which is what makes a 512 MB instance possible at all.
+`fastembed` runs the same bge-small weights through ONNX instead. I checked that
+rather than trusting it: embedding the fifteen table descriptions both ways gives
+cosine 0.999999 on every one and identical retrieval, so the committed vectors
+stay valid and the evaluation numbers still describe the running code.
+
+### Three bugs that only exist off localhost
+
+Each of these passed every test and worked perfectly on my machine.
+
+**`executemany` is not batched.** psycopg2 sends one statement per row. Seeding
+did about 6,300 round trips inside a single transaction — four seconds locally,
+and against a hosted database in Singapore it sat there for fifteen minutes
+looking like a hang. It was not hanging; it was doing exactly what I asked, 6,300
+times. `execute_values` turned that into about ten statements and 8.9 seconds.
+The random sequence is untouched, so the seeded data is byte-identical and the
+ground truth still holds.
+
+**Path resolution walked up too far.** `config.py` found its paths by going up
+three levels from itself, which is the project root locally and `/` inside the
+container. `DATA_DIR` became `/backend/data`, which does not exist, so the schema
+index and the evaluation results silently vanished on the deployed service while
+working locally. Paths now anchor on `backend/`, which is correct in both layouts.
+
+**A trailing slash in `CORS_ORIGINS`.** The single most confusing of the three.
+A browser sends `Origin` as scheme and host with no path, and `CORSMiddleware`
+compares exactly, so `https://app.vercel.app/` refused every browser request
+while `/api/health` reported everything healthy and `curl` worked fine — because
+`curl` sends no `Origin` header at all. One character, and the symptom pointed
+away from the cause. The config now strips trailing slashes, with a test.
+
+### Cold starts
+
+Render's free tier sleeps after fifteen minutes idle, so the first request takes
+about fifty seconds. That is a real cost of not paying, and it is written on the
+page rather than hidden.
 
 ---
 
