@@ -1,0 +1,119 @@
+{
+  "bill_archive": {
+    "amt": "numeric(12,2)",
+    "bill_id": "integer",
+    "bill_no": "character varying",
+    "cust_name": "character varying",
+    "emp_name": "character varying",
+    "status": "character varying",
+    "txn_dt": "timestamp without time zone"
+  },
+  "bill_items": {
+    "bill_id": "integer",
+    "item_id": "integer",
+    "line_total": "numeric(12,2)",
+    "price_at_sale": "numeric(10,2)",
+    "prod_id": "integer",
+    "qty": "integer"
+  },
+  "bills": {
+    "bill_dt": "timestamp without time zone",
+    "bill_id": "integer",
+    "bill_no": "character varying",
+    "cust_id": "integer",
+    "discount_amt": "numeric(10,2)",
+    "emp_id": "integer",
+    "status": "character varying",
+    "total_amt": "numeric(12,2)"
+  },
+  "categories": {
+    "cat_id": "integer",
+    "cat_name": "character varying"
+  },
+  "customers": {
+    "addr": "text",
+    "created_dt": "date",
+    "cust_id": "integer",
+    "cust_name": "character varying",
+    "is_credit_customer": "boolean",
+    "phone_no": "character varying"
+  },
+  "employees": {
+    "emp_id": "integer",
+    "emp_name": "character varying",
+    "join_dt": "date",
+    "mgr_id": "integer",
+    "role": "character varying",
+    "salary": "numeric(10,2)"
+  },
+  "payments": {
+    "amt": "numeric(12,2)",
+    "bill_id": "integer",
+    "pay_dt": "timestamp without time zone",
+    "pay_id": "integer",
+    "pay_mode": "character varying"
+  },
+  "po_lines": {
+    "po_id": "integer",
+    "po_line_id": "integer",
+    "prod_id": "integer",
+    "qty_ordered": "integer",
+    "qty_received": "integer",
+    "unit_cost": "numeric(10,2)"
+  },
+  "products": {
+    "cat_id": "integer",
+    "created_dt": "date",
+    "prod_id": "integer",
+    "prod_name": "character varying",
+    "reorder_lvl": "integer",
+    "sell_price": "numeric(10,2)",
+    "sku": "character varying",
+    "stock_qty": "integer",
+    "unit": "character varying"
+  },
+  "purchase_orders": {
+    "expected_dt": "date",
+    "po_dt": "date",
+    "po_id": "integer",
+    "status": "character varying",
+    "supp_id": "integer",
+    "total_amt": "numeric(12,2)"
+  },
+  "stock_adjustments": {
+    "adj_dt": "date",
+    "adj_id": "integer",
+    "emp_id": "integer",
+    "prod_id": "integer",
+    "qty_change": "integer",
+    "reason": "character varying"
+  },
+  "stock_entries": {
+    "cost_price": "numeric(10,2)",
+    "entry_id": "integer",
+    "prod_id": "integer",
+    "qty": "integer",
+    "recv_by": "integer",
+    "recv_dt": "timestamp without time zone",
+    "supp_id": "integer"
+  },
+  "store_settings": {
+    "setting_key": "character varying",
+    "setting_val": "text"
+  },
+  "suppliers": {
+    "addr": "text",
+    "gst_no": "character varying",
+    "is_active": "boolean",
+    "phone_no": "character varying",
+    "supp_id": "integer",
+    "supp_name": "character varying"
+  },
+  "tbl_prod_master_old": {
+    "active_flag": "character",
+    "p_code": "character varying",
+    "p_id": "integer",
+    "p_name": "character varying",
+    "rate": "numeric(10,2)"
+  }
+}

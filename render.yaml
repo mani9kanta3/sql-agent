@@ -1,0 +1,94 @@
+# Render blueprint. Point Render at this file and it creates the service
+# with the right settings, instead of me remembering fourteen dashboard
+# fields correctly at two in the morning.
+#
+# The database is deliberately NOT defined here. Render's free Postgres
+# expires, and a portfolio link that dies silently three weeks after a
+# recruiter bookmarks it is worse than one that was never deployed. The
+# database lives on Neon, whose free tier is permanent, and this service
+# is given its connection details as environment variables.
+#
+# Everything marked "sync: false" has to be filled in by hand in the
+# dashboard. That is the point: those are secrets, and a secret in a file
+# in a public repository is not a secret.
+
+services:
+  - type: web
+    name: sql-agent-api
+    runtime: docker
+
+    # Singapore is the closest region to India on the free plan.
+    region: singapore
+    plan: free
+
+    # The Dockerfile lives in backend/, not at the repository root, and
+    # backend/ is also the build context it expects.
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+
+    # No healthCheckPath on purpose. /api/health does real work: it runs
+    # a DELETE to prove the role cannot write, calls Langfuse to prove
+    # the keys are valid, and compares the live schema to the snapshot.
+    # That is exactly what I want when I ask for it, and not what I want
+    # Render running every few seconds forever. Render falls back to
+    # checking that the port is open, which is the right check for
+    # "is the process alive".
+
+    envVars:
+      # ------------------------------------------------ database (Neon)
+      - key: DB_HOST
+        sync: false
+      - key: DB_NAME
+        sync: false
+      # Neon refuses a plain connection, so this is not optional.
+      - key: DB_SSLMODE
+        value: require
+
+      # The agent's credential. SELECT only.
+      - key: DB_RO_USER
+        value: sql_agent_ro
+      - key: DB_RO_PASSWORD
+        sync: false
+
+      # The monitoring credential. INSERT on one table.
+      - key: DB_LOG_USER
+        value: sql_agent_log
+      - key: DB_LOG_PASSWORD
+        sync: false
+
+      # The admin credentials are deliberately absent. Only scripts/ uses
+      # them, they run from my laptop, and the deployed service has no
+      # business holding a credential that can drop a table.
+
+      # --------------------------------------------------------- model
+      - key: LLM_PROVIDER
+        value: groq
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_API_KEY_EXTRA
+        sync: false
+      - key: MODEL_INPUT_COST_PER_M
+        value: "0.15"
+      - key: MODEL_OUTPUT_COST_PER_M
+        value: "0.60"
+
+      # ------------------------------------------------------- tracing
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: LANGFUSE_BASE_URL
+        value: https://cloud.langfuse.com
+      # So a trace from the deployed service is filterable apart from one
+      # made on my laptop.
+      - key: LANGFUSE_ENVIRONMENT
+        value: production
+
+      # ----------------------------------------------------------- api
+      # Set to the Vercel URL once the frontend is deployed. Without it
+      # the browser blocks every request and the page looks broken while
+      # the API is perfectly healthy.
+      - key: CORS_ORIGINS
+        sync: false

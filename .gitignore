@@ -27,16 +27,16 @@ backend/data/eval/*
 !backend/data/eval/comparison.json
 !backend/data/eval/baseline.json
 
-# The schema vectors are rebuilt in one command, so there is no reason
-# to commit a generated file.
-backend/data/schema_index.json
+# The schema vectors and the snapshot ARE committed, which is a change
+# from how this started. They are generated, but generating them needs a
+# live database and the embedding model, and the deployed container has
+# neither at build time. They are small, deterministic, and required at
+# runtime by retrieval and by the drift check.
 
 # Timestamped copies of every evaluation run. Insurance against
 # overwriting results, which I have done. Not for anyone else to read.
 backend/data/eval/runs/
 
-# The schema snapshot is rebuilt with the index.
-backend/data/schema_snapshot.json
 
 # Editors and OS
 .vscode/

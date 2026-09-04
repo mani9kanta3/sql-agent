@@ -29,10 +29,29 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# backend/app/config.py -> backend/app -> backend -> the project root
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+# Paths are worked out from this file's own location, and they stop at
+# backend/ rather than walking up to the project root.
+#
+# That is not a style choice, it is what makes the container work. Locally
+# the tree is <project>/backend/app/config.py, so walking up three levels
+# lands on the project root and <root>/backend/data is correct. In the
+# image there is no project root: the Dockerfile copies app/ and data/ to
+# /app, so config.py sits at /app/app/config.py and walking up three
+# levels lands on "/". DATA_DIR became /backend/data, which does not
+# exist, and the schema index and the evaluation results silently went
+# missing on the deployed service while working perfectly on my laptop.
+#
+# Anchoring on backend/ gives the right answer in both layouts:
+#   local      <project>/backend/app/config.py -> <project>/backend
+#   container  /app/app/config.py              -> /app
+BACKEND_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv(BASE_DIR / "backend" / ".env")
+# Kept because the tests and scripts still refer to it.
+BASE_DIR = BACKEND_DIR.parent
+
+# No .env in the container; Render and Cloud Run supply real environment
+# variables, and load_dotenv leaves those alone when the file is absent.
+load_dotenv(BACKEND_DIR / ".env")
 
 
 def get(name, default=None, required=False):
@@ -185,7 +204,7 @@ LANGFUSE_ENVIRONMENT = get("LANGFUSE_ENVIRONMENT", "local")
 
 # ------------------------------------------------------------- folders
 
-DATA_DIR = BASE_DIR / "backend" / "data"
+DATA_DIR = BACKEND_DIR / "data"
 
 # Where build_schema_index.py writes the table vectors. It is a small
 # JSON file and not a vector database, because fifteen tables do not

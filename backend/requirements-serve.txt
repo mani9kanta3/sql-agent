@@ -1,0 +1,61 @@
+# What the deployed API needs, and nothing else.
+#
+#     pip install -r requirements-serve.txt
+#
+# requirements.txt is the development set. It carries PyTorch through
+# sentence-transformers, plus the evaluation tooling and the tests, and
+# comes to about 1.2 GB installed. Cloud Run's smallest instances and
+# every free tier worth using are well under that, so serving from that
+# file was never going to work.
+#
+# What is dropped, and why it is safe:
+#
+#   torch, sentence-transformers, transformers      524 MB of the 1.2 GB
+#       Replaced by fastembed, which runs the same bge-small weights
+#       through ONNX. I checked instead of trusting it: embedding the
+#       fifteen table descriptions both ways gives cosine 0.999999 on
+#       every one, and the retrieved top five for a test question is
+#       identical. So data/schema_index.json stays valid, nothing is
+#       re-embedded, and the evaluation numbers still describe the code
+#       that is running. This is the single biggest saving.
+#
+#   pytest
+#       Tests do not run in production.
+#
+#   google-genai
+#       The alternate model provider. llm.py imports it lazily, so the
+#       service runs fine without it as long as LLM_PROVIDER is groq.
+#
+#   mcp
+#       The MCP server is a separate entry point that a desktop client
+#       launches over stdio. The HTTP API never imports it.
+#
+# The agent, the safety envelope, the query log and the drift check are
+# all here. Nothing about how the API behaves changes.
+
+# The API
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.5
+
+# The agent
+langgraph==0.2.62
+langgraph-checkpoint==2.0.9
+
+# Static SQL validation. This is the parser that decides what may run.
+sqlglot==26.3.8
+
+# Postgres, for both the read only role and the log role
+psycopg2-binary==2.9.10
+
+# The model provider
+groq==1.7.0
+
+# Embeddings without torch. Same model, ONNX runtime.
+fastembed==0.8.0
+numpy==2.2.1
+
+# Tracing. Does nothing at all when the keys are blank.
+langfuse==4.15.1
+
+python-dotenv==1.0.1

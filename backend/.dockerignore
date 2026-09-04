@@ -1,0 +1,22 @@
+# Everything the image does not need. Keeping this tight matters: the
+# build context is uploaded to Cloud Build on every deploy, and venv
+# alone is 1.2 GB.
+venv/
+models/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Secrets never go in an image. Cloud Run gets these as env vars.
+.env
+
+# Development only.
+tests/
+eval/
+scripts/
+mcp_server/
+db/
+requirements.txt
+
+# The evaluation results are served from data/eval, so they stay.
+data/eval/runs/
