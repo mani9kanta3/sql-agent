@@ -27,6 +27,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 import psycopg2
+from psycopg2.extras import execute_values
 
 from app import config
 
@@ -164,20 +165,43 @@ def money(value):
     return Decimal(str(round(value, 2)))
 
 
+# Every bulk insert goes through this rather than cursor.executemany().
+#
+# psycopg2's executemany sends one statement per row. On my laptop that
+# is invisible. Against a hosted database in Singapore each round trip is
+# about eighty milliseconds, and seeding does roughly six thousand of
+# them, so what took four seconds locally sat there for fifteen minutes
+# and looked like a hang. It was not hanging, it was doing exactly what I
+# told it to, six thousand times.
+#
+# execute_values folds the rows into one INSERT ... VALUES (..),(..),(..)
+# per page, which turns those six thousand trips into about ten.
+#
+# fetch=True returns the RETURNING rows in insertion order, which is what
+# lets the bills go in as one statement and still hand back the ids their
+# line items need.
+def insert_many(cursor, sql, rows, fetch=False):
+    if not rows:
+        return []
+    return execute_values(cursor, sql, rows, page_size=500, fetch=fetch)
+
+
 def seed():
     connection = admin_connection()
     cursor = connection.cursor()
 
     print("categories, suppliers, employees, customers")
 
-    cursor.executemany(
-        "INSERT INTO categories (cat_name) VALUES (%s)",
+    insert_many(
+        cursor,
+        "INSERT INTO categories (cat_name) VALUES %s",
         [(name,) for name in CATEGORIES],
     )
 
-    cursor.executemany(
+    insert_many(
+        cursor,
         "INSERT INTO suppliers (supp_name, phone_no, addr, gst_no, is_active) "
-        "VALUES (%s, %s, %s, %s, %s)",
+        "VALUES %s",
         [
             (name, phone, f"Shop {index + 1}, Main Bazaar Road, Vijayawada", gst, active)
             for index, (name, phone, gst, active) in enumerate(SUPPLIERS)
@@ -197,20 +221,22 @@ def seed():
         )
         employee_ids.append(cursor.fetchone()[0])
 
-    customer_ids = []
+    customer_rows = []
     for index, name in enumerate(CUSTOMER_NAMES):
-        cursor.execute(
-            "INSERT INTO customers (cust_name, phone_no, addr, is_credit_customer, created_dt) "
-            "VALUES (%s, %s, %s, %s, %s) RETURNING cust_id",
-            (
-                name,
-                f"98{random.randint(10000000, 99999999)}",
-                f"Plot {index + 11}, Sector {random.randint(1, 9)}, Vijayawada",
-                index % 3 == 0,  # roughly a third buy on credit
-                LIVE_FROM - timedelta(days=random.randint(0, 700)),
-            ),
-        )
-        customer_ids.append(cursor.fetchone()[0])
+        customer_rows.append((
+            name,
+            f"98{random.randint(10000000, 99999999)}",
+            f"Plot {index + 11}, Sector {random.randint(1, 9)}, Vijayawada",
+            index % 3 == 0,  # roughly a third buy on credit
+            LIVE_FROM - timedelta(days=random.randint(0, 700)),
+        ))
+
+    customer_ids = [row[0] for row in insert_many(
+        cursor,
+        "INSERT INTO customers (cust_name, phone_no, addr, is_credit_customer, "
+        "created_dt) VALUES %s RETURNING cust_id",
+        customer_rows, fetch=True,
+    )]
 
     # -------------------------------------------------------- products
 
@@ -219,29 +245,34 @@ def seed():
     cursor.execute("SELECT cat_id FROM categories ORDER BY cat_id")
     category_ids = [row[0] for row in cursor.fetchall()]
 
-    product_ids = []
-    product_prices = {}
+    # Generated first, inserted once. The random calls stay in exactly
+    # the order they were in when the evaluation data was produced, so
+    # the seeded database is unchanged by this batching.
+    product_rows = []
     for name, sku, unit, price, category_index, reorder in PRODUCTS:
         # Stock is set so that a handful of products are genuinely below
         # their reorder level, because "what is running low" is one of
         # the questions and it should have a real answer.
         stock = random.randint(0, reorder) if random.random() < 0.18 else random.randint(reorder, reorder * 6)
-        cursor.execute(
-            "INSERT INTO products (prod_name, sku, unit, sell_price, stock_qty, reorder_lvl, cat_id, created_dt) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING prod_id",
-            (name, sku, unit, money(price), stock, reorder,
-             category_ids[category_index], date(2024, 12, 1)),
-        )
-        product_id = cursor.fetchone()[0]
-        product_ids.append(product_id)
-        product_prices[product_id] = money(price)
+        product_rows.append((name, sku, unit, money(price), stock, reorder,
+                             category_ids[category_index], date(2024, 12, 1)))
+
+    returned = insert_many(
+        cursor,
+        "INSERT INTO products (prod_name, sku, unit, sell_price, stock_qty, "
+        "reorder_lvl, cat_id, created_dt) VALUES %s RETURNING prod_id",
+        product_rows, fetch=True,
+    )
+    product_ids = [row[0] for row in returned]
+    product_prices = {pid: row[3] for pid, row in zip(product_ids, product_rows)}
 
     # The dead table. A stale subset with old prices, so that anyone who
     # joins it instead of products gets numbers that are wrong but not
     # obviously wrong.
-    cursor.executemany(
+    insert_many(
+        cursor,
         "INSERT INTO tbl_prod_master_old (p_id, p_name, p_code, rate, active_flag) "
-        "VALUES (%s, %s, %s, %s, %s)",
+        "VALUES %s",
         [
             (index + 1, name, sku.replace("-", ""), money(price * 0.85), "Y" if index % 4 else "N")
             for index, (name, sku, _unit, price, _cat, _reorder) in enumerate(PRODUCTS[:15])
@@ -267,12 +298,16 @@ def seed():
             random_datetime(LIVE_FROM, TODAY),
             random.choice(storekeeper_ids),
         ))
-    cursor.executemany(
-        "INSERT INTO stock_entries (prod_id, supp_id, qty, cost_price, recv_dt, recv_by) "
-        "VALUES (%s, %s, %s, %s, %s, %s)",
+    insert_many(
+        cursor,
+        "INSERT INTO stock_entries (prod_id, supp_id, qty, cost_price, recv_dt, recv_by) VALUES %s",
         entries,
     )
 
+    # Purchase orders and their lines. Generated together so the random
+    # sequence is untouched, then inserted as two statements instead of
+    # one per order plus one per line plus an UPDATE.
+    po_rows, po_line_specs = [], []
     for _ in range(45):
         supplier_id = random.choice(supplier_ids)
         po_dt = LIVE_FROM + timedelta(days=random.randint(0, (TODAY - LIVE_FROM).days))
@@ -283,14 +318,7 @@ def seed():
         # A fifth of orders never got a confirmed delivery date.
         expected = None if random.random() < 0.2 else po_dt + timedelta(days=random.randint(3, 21))
 
-        cursor.execute(
-            "INSERT INTO purchase_orders (supp_id, po_dt, expected_dt, status, total_amt) "
-            "VALUES (%s, %s, %s, %s, 0) RETURNING po_id",
-            (supplier_id, po_dt, expected, status),
-        )
-        po_id = cursor.fetchone()[0]
-
-        po_total = Decimal("0")
+        lines, po_total = [], Decimal("0")
         for product_id in random.sample(product_ids, random.randint(1, 5)):
             ordered = random.randint(10, 120)
             if status == "CLOSED":
@@ -302,17 +330,26 @@ def seed():
 
             unit_cost = money(float(product_prices[product_id]) * random.uniform(0.55, 0.78))
             po_total += unit_cost * ordered
+            lines.append((product_id, ordered, received, unit_cost))
 
-            cursor.execute(
-                "INSERT INTO po_lines (po_id, prod_id, qty_ordered, qty_received, unit_cost) "
-                "VALUES (%s, %s, %s, %s, %s)",
-                (po_id, product_id, ordered, received, unit_cost),
-            )
+        # The total is known before the insert now, so the row goes in
+        # correct the first time and there is no UPDATE afterwards.
+        po_rows.append((supplier_id, po_dt, expected, status, money(float(po_total))))
+        po_line_specs.append(lines)
 
-        cursor.execute(
-            "UPDATE purchase_orders SET total_amt = %s WHERE po_id = %s",
-            (money(float(po_total)), po_id),
-        )
+    po_ids = [row[0] for row in insert_many(
+        cursor,
+        "INSERT INTO purchase_orders (supp_id, po_dt, expected_dt, status, total_amt) "
+        "VALUES %s RETURNING po_id",
+        po_rows, fetch=True,
+    )]
+
+    insert_many(
+        cursor,
+        "INSERT INTO po_lines (po_id, prod_id, qty_ordered, qty_received, unit_cost) "
+        "VALUES %s",
+        [(po_id, *line) for po_id, lines in zip(po_ids, po_line_specs) for line in lines],
+    )
 
     # ----------------------------------------------------------- bills
 
@@ -320,7 +357,7 @@ def seed():
 
     cashier_ids = [employee_ids[1], employee_ids[2], employee_ids[3]]
     bill_number = 0
-    payments = []
+    bill_rows, bill_line_specs, payment_specs = [], [], []
 
     # Five customers stopped coming during 2025. Real shops have them,
     # and without them "which customers have not bought in six months"
@@ -363,27 +400,22 @@ def seed():
 
         total = money(float(subtotal - discount))
 
-        cursor.execute(
-            "INSERT INTO bills (bill_no, cust_id, emp_id, bill_dt, total_amt, discount_amt, status) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING bill_id",
-            (
-                f"BILL-{bill_dt.strftime('%Y%m%d')}-{bill_number:05d}",
-                customer_id,
-                random.choice(cashier_ids),
-                bill_dt,
-                total,
-                discount,
-                status,
-            ),
-        )
-        bill_id = cursor.fetchone()[0]
-
-        cursor.executemany(
-            "INSERT INTO bill_items (bill_id, prod_id, qty, price_at_sale, line_total) "
-            "VALUES (%s, %s, %s, %s, %s)",
-            [(bill_id, product_id, qty, price, line_total)
-             for product_id, qty, price, line_total in lines],
-        )
+        # Collected, not inserted. The bill id is not known yet, so the
+        # index of this bill in the list stands in for it and is swapped
+        # for the real id once all the bills have gone in as one
+        # statement. The random calls below are in the same order they
+        # always were, so the data itself is unchanged.
+        position = len(bill_rows)
+        bill_rows.append((
+            f"BILL-{bill_dt.strftime('%Y%m%d')}-{bill_number:05d}",
+            customer_id,
+            random.choice(cashier_ids),
+            bill_dt,
+            total,
+            discount,
+            status,
+        ))
+        bill_line_specs.append(lines)
 
         # Payments. A cancelled bill was never collected. A PARTIAL one
         # has had some money against it and still owes the rest, which is
@@ -402,20 +434,39 @@ def seed():
             # join multiplies the totals.
             if random.random() < 0.12:
                 part = money(float(total) * random.uniform(0.4, 0.6))
-                payments.append((bill_id, "CASH", part, bill_dt))
-                payments.append((
-                    bill_id, "UPI", money(float(total - part)),
+                payment_specs.append((position, "CASH", part, bill_dt))
+                payment_specs.append((
+                    position, "UPI", money(float(total - part)),
                     bill_dt + timedelta(days=random.randint(3, 30)),
                 ))
             else:
-                payments.append((bill_id, mode, total, bill_dt))
+                payment_specs.append((position, mode, total, bill_dt))
         elif status == "PARTIAL":
             part = money(float(total) * random.uniform(0.3, 0.7))
-            payments.append((bill_id, "CASH", part, bill_dt))
+            payment_specs.append((position, "CASH", part, bill_dt))
 
-    cursor.executemany(
-        "INSERT INTO payments (bill_id, pay_mode, amt, pay_dt) VALUES (%s, %s, %s, %s)",
-        payments,
+    # Three statements for fourteen hundred bills, their lines and their
+    # payments, instead of roughly six thousand.
+    bill_ids = [row[0] for row in insert_many(
+        cursor,
+        "INSERT INTO bills (bill_no, cust_id, emp_id, bill_dt, total_amt, "
+        "discount_amt, status) VALUES %s RETURNING bill_id",
+        bill_rows, fetch=True,
+    )]
+
+    insert_many(
+        cursor,
+        "INSERT INTO bill_items (bill_id, prod_id, qty, price_at_sale, line_total) "
+        "VALUES %s",
+        [(bill_id, *line) for bill_id, lines in zip(bill_ids, bill_line_specs)
+         for line in lines],
+    )
+
+    insert_many(
+        cursor,
+        "INSERT INTO payments (bill_id, pay_mode, amt, pay_dt) VALUES %s",
+        [(bill_ids[position], mode, amount, when)
+         for position, mode, amount, when in payment_specs],
     )
 
     # --------------------------------------------------------- archive
@@ -438,9 +489,9 @@ def seed():
             random.choices(["PAID", "CANCELLED"], weights=[95, 5])[0],
         ))
 
-    cursor.executemany(
-        "INSERT INTO bill_archive (bill_id, bill_no, cust_name, emp_name, txn_dt, amt, status) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+    insert_many(
+        cursor,
+        "INSERT INTO bill_archive (bill_id, bill_no, cust_name, emp_name, txn_dt, amt, status) VALUES %s",
         archive,
     )
 
@@ -467,14 +518,15 @@ def seed():
             random.choice(storekeeper_ids),
         ))
 
-    cursor.executemany(
-        "INSERT INTO stock_adjustments (prod_id, qty_change, reason, adj_dt, emp_id) "
-        "VALUES (%s, %s, %s, %s, %s)",
+    insert_many(
+        cursor,
+        "INSERT INTO stock_adjustments (prod_id, qty_change, reason, adj_dt, emp_id) VALUES %s",
         adjustments,
     )
 
-    cursor.executemany(
-        "INSERT INTO store_settings (setting_key, setting_val) VALUES (%s, %s)",
+    insert_many(
+        cursor,
+        "INSERT INTO store_settings (setting_key, setting_val) VALUES %s",
         SETTINGS,
     )
 
