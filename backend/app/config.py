@@ -224,4 +224,24 @@ EVAL_DIR = DATA_DIR / "eval"
 
 # ----------------------------------------------------------------- api
 
-CORS_ORIGINS = get("CORS_ORIGINS", "http://localhost:5173").split(",")
+def _origins(raw):
+    """
+    Split the allowed origins, and strip the trailing slash off each.
+
+    A browser's Origin header is scheme, host and port, never a path, so
+    it never has a trailing slash. CORSMiddleware compares it exactly.
+    Put "https://example.vercel.app/" in the environment and every
+    request is refused with "Disallowed CORS origin", while the API
+    itself is perfectly healthy and curl works fine, because curl does
+    not send an Origin header at all.
+
+    That cost an evening on the first deployment. The API said ok, the
+    page said nothing loaded, and the difference was one character in a
+    dashboard field. Copying a URL from a browser address bar gives you
+    that character for free, so the config strips it rather than trusting
+    whoever typed it, which is me.
+    """
+    return [origin.strip().rstrip("/") for origin in raw.split(",") if origin.strip()]
+
+
+CORS_ORIGINS = _origins(get("CORS_ORIGINS", "http://localhost:5173"))
